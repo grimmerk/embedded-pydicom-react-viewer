@@ -1,10 +1,4 @@
 {
-  "short_name": "DICOM image viewer",
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff",
-
   "manifest_version": 3,
   "name": "DICOM image viewer",
   "description": "This extension allows the user to view DICOM image",
@@ -27,7 +21,7 @@
     "resources": ["index.html"],
     "matches": ["<all_urls>"]
   }],
-  "permissions": ["declarativeNetRequest"],
+  "permissions": ["declarativeNetRequestWithHostAccess", "webNavigation"],
   "host_permissions": ["<all_urls>"],
   "commands": {
     "_execute_action": {
