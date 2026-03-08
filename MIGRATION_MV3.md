@@ -17,10 +17,10 @@ PR: https://github.com/grimmerk/embedded-pydicom-react-viewer/pull/4
 - [x] Add missing icon files (`Dicom_16.png`, `Dicom_48.png`, `Dicom_128.png`) from `dicom-web-viewer` repo
 - [x] Remove PWA fields (`start_url`, `display`, `theme_color`, `background_color`) that caused manifest icons warning
 
-### Blocked — Pyodide CSP Issue
-- [ ] **Pyodide 0.18.0 requires `unsafe-eval`**, which MV3 extension pages do NOT allow
-- Error: `EvalError: Evaluating a string as JavaScript violates the following Content Security Policy directive because 'unsafe-eval' is not an allowed source of script: script-src 'self' 'wasm-unsafe-eval'`
-- Current CSP uses `wasm-unsafe-eval` (allows WebAssembly) but Pyodide 0.18's JS glue code internally uses `eval()`/`Function()` constructor
+### Pyodide CSP Issue (resolved)
+- [x] **Pyodide 0.18.0 required `unsafe-eval`**, which MV3 extension pages do NOT allow
+- Upgraded to Pyodide 0.29.3 which no longer uses `eval()`/`Function()` constructor
+- CSP `wasm-unsafe-eval` is sufficient for 0.21.3+
 
 ## Solution: Upgrade Pyodide (0.18.0 → 0.29.3)
 
@@ -69,17 +69,36 @@ PR: https://github.com/grimmerk/embedded-pydicom-react-viewer/pull/4
 | v0.29 | Python dict defaults to JS `Object` (was `Map`) | Low — we use `getBuffer()` for numpy, not `toJs()` on dicts |
 
 ### Migration Checklist
-- [ ] Download Pyodide 0.29.3 files to `public/pyodide/`
-- [ ] Update `download_pyodide.sh` for 0.29.3
-- [ ] Python: `import pyodide` + `pyodide.create_proxy(x)` → `from pyodide.ffi import create_proxy` + `create_proxy(x)`
-- [ ] Verify pydicom wheel compatibility (try `micropip.install('pydicom')` from PyPI, or bundle a compatible .whl)
-- [ ] Test build & load as unpacked extension
-- [ ] Verify DICOM viewing works (uncompressed, compressed JPEG, multi-frame, 3D views)
+- [x] Download Pyodide 0.29.3 files to `public/pyodide/`
+- [x] Update `download_pyodide.sh` for 0.29.3
+- [x] Python: `import pyodide` + `pyodide.create_proxy(x)` → `from pyodide.ffi import create_proxy` + `create_proxy(x)`
+- [x] Update pydicom wheel 2.2.1 → 2.4.4 (Python 3.13 compat)
+- [x] Fix `baseURL()` to exclude URL hash fragment from Pyodide indexURL
+- [x] Guard `__main__` block in dicom_parser.py from running in Pyodide
+- [x] Test web mode: MR brain DICOM (512x512, MONOCHROME2, uncompressed) ✓
+- [ ] Test Chrome extension mode (load as unpacked)
+- [ ] Test compressed JPEG, multi-frame, 3D views
 
 ### pydicom Wheel
-- Current: `pydicom-2.2.1-py3-none-any.whl` (bundled locally in `public/pyodide/`)
-- Pyodide 0.29.3 uses Python 3.12; pydicom is pure Python so any recent wheel should work
-- Options: bundle locally or install from PyPI at runtime (`await micropip.install('pydicom')`)
+- Updated: `pydicom-2.4.4-py3-none-any.whl` (bundled locally in `public/pyodide/`)
+- Pyodide 0.29.3 uses Python 3.13; pydicom 2.4.4 is pure Python (`py3-none-any`), compatible
+- pydicom 3.0+ has breaking API changes (encaps, pixel_data_handlers refactored) — stay on 2.4.x
+
+### Pyodide File Format Changes (0.18 → 0.29.3)
+| 0.18.0 | 0.29.3 | Notes |
+|--------|--------|-------|
+| `pyodide.asm.data` (5.2MB) | `python_stdlib.zip` (2.3MB) | Stdlib bundled as zip instead of data blob |
+| `packages.json` | `pyodide-lock.json` | Lock file renamed in v0.24 |
+| `numpy.js` + `numpy.data` | `numpy-*.whl` | Packages now distributed as wheels |
+| `micropip.js` + `micropip.data` | `micropip-*.whl` | Same |
+| `packaging.*`, `pyparsing.*`, `setuptools.*` | Not needed | No longer required as separate files |
+
+### Lessons Learned
+- **`runPythonAsync` uses `__main__` namespace**: `__name__` is `"__main__"` in Pyodide's `runPythonAsync`, so `if __name__ == "__main__":` blocks WILL execute. Guard with `"pyodide" not in sys.modules` if the block is for local-only testing.
+- **`baseURL()` must exclude hash fragment**: `window.location.href` includes `#...`, which corrupts relative URL resolution for Pyodide file fetching. Use `window.location.origin + window.location.pathname` instead.
+- **Most JS-side Pyodide APIs are stable**: `getBuffer()`, `destroy()`, `release()`, `callKwargs()`, `loadPackagesFromImports()` all survived 0.18→0.29.3 unchanged.
+- **Only Python-side breaking change**: `pyodide.create_proxy` → `pyodide.ffi.create_proxy` (root module access removed in v0.23).
+- **Package size reduced**: Old Pyodide dir was ~30MB (with js+data pairs); new is ~16MB (core + whl files).
 
 ## Chrome Web Store Considerations
 
