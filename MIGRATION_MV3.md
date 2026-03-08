@@ -22,35 +22,64 @@ PR: https://github.com/grimmerk/embedded-pydicom-react-viewer/pull/4
 - Error: `EvalError: Evaluating a string as JavaScript violates the following Content Security Policy directive because 'unsafe-eval' is not an allowed source of script: script-src 'self' 'wasm-unsafe-eval'`
 - Current CSP uses `wasm-unsafe-eval` (allows WebAssembly) but Pyodide 0.18's JS glue code internally uses `eval()`/`Function()` constructor
 
-## Solution: Upgrade Pyodide
+## Solution: Upgrade Pyodide (0.18.0 → 0.29.3)
 
-### Option A: npm pyodide package (recommended)
-- Latest version: **0.29.3** (current: 0.18.0)
+### Option A: npm pyodide package
 - Install: `yarn add pyodide`
 - Import: `import { loadPyodide } from "pyodide"`
-- Pyodide 0.24+ explicitly supports MV3 without `unsafe-eval`
 - Needs [pyodide-webpack-plugin](https://github.com/pyodide/pyodide-webpack-plugin) for CRA/webpack bundling
 - Ref: https://pyodide.org/en/stable/usage/working-with-bundlers.html
+- **Downside**: CRA 4 (react-scripts 4.0.3) uses webpack 4; customizing webpack config requires eject or craco/react-app-rewired
 
-### Option B: CDN/local Pyodide 0.24+
-- Download Pyodide 0.24+ files to `public/pyodide/`
-- Keep `<script src="pyodide/pyodide.js">` approach
-- Less code change but still need to adapt API differences
+### Option B: Local Pyodide files (chosen)
+- Download Pyodide 0.29.3 release files to `public/pyodide/`
+- Keep `<script src="pyodide/pyodide.js">` + `loadPyodide({indexURL})` approach
+- Minimal build config change — no need to eject or add webpack plugins
+- Required files: `pyodide.js`, `pyodide.asm.js`, `pyodide.asm.wasm`, `python_stdlib.zip`, `pyodide-lock.json`, plus `numpy`/`micropip` packages
 
-### API Changes from 0.18 → 0.29
-Key changes in `pyodideHelper.ts`:
-1. `loadPyodide()` — API signature may have changed
-2. `pyodide.loadPackagesFromImports()` — may be renamed/removed
-3. `pyodide.runPythonAsync()` — should still work
-4. `pyodide.globals.get()` — should still work
-5. `.toJs()` — parameter format changed (0.18 uses `toJs(1)`, newer uses `toJs({depth: 1})`)
-6. `.getBuffer()` — may be replaced with `.to_js()` with buffer protocol
-7. `micropip.install()` — should still work, but pydicom wheel version may need update
+### API Changes from 0.18 → 0.29.3 (researched)
+
+#### JS-side (pyodideHelper.ts, App.tsx, jpegDecoder.ts)
+| API | Status | Notes |
+|-----|--------|-------|
+| `loadPyodide({indexURL})` | **No change** | Still works the same way |
+| `pyodide.loadPackagesFromImports(code)` | **No change** | Still available |
+| `pyodide.runPythonAsync(code)` | **No change** | |
+| `pyodide.globals.get(name)` | **No change** | |
+| `PyProxy.getBuffer(type)` | **No change** | Still available on buffer-supporting objects |
+| `PyBufferView.release()` | **No change** | Still required |
+| `PyProxy.destroy()` | **No change** | Still required |
+| `.callKwargs({...})` | **No change** | |
+| `.toJs(1)` (deprecated code) | **Change** | Must use `.toJs({depth: 1})` — already noted in code comments |
+| `micropip.install()` | **No change** | New optional params are backwards-compatible |
+
+#### Python-side (dicom_parser.py)
+| API | Status | Notes |
+|-----|--------|-------|
+| `import pyodide; pyodide.create_proxy()` | **Breaking** | Moved to `pyodide.ffi.create_proxy` in v0.23. Root-level access removed. |
+| `buffer.to_py()` (JsProxy → Python) | **No change** | |
+| `jsobj.destroy()` | **No change** | |
+
+#### Behavioral changes to be aware of
+| Version | Change | Impact |
+|---------|--------|--------|
+| v0.19 | PyProxy args passed to JS functions are auto-destroyed | Low — we already manage lifetimes manually |
+| v0.24 | Lock file renamed `repodata.json` → `pyodide-lock.json` | Handled by using 0.29.3 files |
+| v0.28 | JS `null` → `pyodide.ffi.jsnull` instead of `None` | Low — can pass `convertNullToNone: true` to `loadPyodide()` if needed |
+| v0.29 | Python dict defaults to JS `Object` (was `Map`) | Low — we use `getBuffer()` for numpy, not `toJs()` on dicts |
+
+### Migration Checklist
+- [ ] Download Pyodide 0.29.3 files to `public/pyodide/`
+- [ ] Update `download_pyodide.sh` for 0.29.3
+- [ ] Python: `import pyodide` + `pyodide.create_proxy(x)` → `from pyodide.ffi import create_proxy` + `create_proxy(x)`
+- [ ] Verify pydicom wheel compatibility (try `micropip.install('pydicom')` from PyPI, or bundle a compatible .whl)
+- [ ] Test build & load as unpacked extension
+- [ ] Verify DICOM viewing works (uncompressed, compressed JPEG, multi-frame, 3D views)
 
 ### pydicom Wheel
-- Current: `pydicom-2.2.1-py3-none-any.whl` (bundled locally)
-- May need to update to a newer version compatible with newer Pyodide
-- Or install from PyPI: `await micropip.install('pydicom')`
+- Current: `pydicom-2.2.1-py3-none-any.whl` (bundled locally in `public/pyodide/`)
+- Pyodide 0.29.3 uses Python 3.12; pydicom is pure Python so any recent wheel should work
+- Options: bundle locally or install from PyPI at runtime (`await micropip.install('pydicom')`)
 
 ## Chrome Web Store Considerations
 
