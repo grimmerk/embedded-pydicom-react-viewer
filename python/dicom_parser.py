@@ -1347,9 +1347,8 @@ class PyodideDicom:
         )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and "pyodide" not in sys.modules:
     print("it is in __main__")
-    # will not be executed in pyodide context, after testing
     print("you are not in pyodide, just do local python stuff")
 
     # import line_profiler

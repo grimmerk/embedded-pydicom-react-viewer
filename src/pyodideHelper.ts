@@ -12,15 +12,13 @@ declare var self: any;
 // const baseURL = window.location.href ?? self.location.origin + "/"
 
 function baseURL() {
-    let baseURL = ""
     const regex = /chrome-extension:\/\/.*(?=\/index.html)/;
     const matchExtensionURL = window.location.href.match(regex)
     if (matchExtensionURL) {
-        baseURL = matchExtensionURL[0] + "/"
-    } else {
-        baseURL = window.location.href + "/"
+        return matchExtensionURL[0] + "/"
     }
-    return baseURL
+    // Use origin + pathname to avoid including hash fragment in the URL
+    return window.location.origin + window.location.pathname
 }
 
 // const test: number[] = []
