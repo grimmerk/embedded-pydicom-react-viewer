@@ -13,17 +13,25 @@ Download DICOM files from [DICOM sample file sites](#dicom-sample-file-sites)
 
 ## Features
 
-- view DICOM files & show some basic info.
-- window center & width mode
-- multiple frame
-- coronal & sagittal views & judge if current is AxialView or not
-- scale (resize to viewer size)
-- ...
+1. View online DICOM files by clicking DICOM urls
+2. View offline DICOM by dragging files onto Chrome, or use built-in file browser to select files
+3. In terminal, use CLI tool [cli-open-dicom-with-chrome](https://www.npmjs.com/package/cli-open-dicom-with-chrome) to open DICOM files via this extension
+4. Shortcut (ctrl+u/cmd+u) to open extension viewer page. Or click extension icon.
+5. Support adjustable window center mode (mouse/touch drag to adjust, preset modes like Brain/Lungs)
+6. Support multi-frame, RGB DICOM files
+7. Support different plane views mode (axial, sagittal, coronal)
+8. Scale (resize to viewer size)
+9. Show basic DICOM info and transfer syntax on UI
+10. Support (0028,3000) Modality LUT Sequence and PALETTE COLOR
 
-More complete list is on [CHANGELOG.md](CHANGELOG.md).
-(0028,3000) Modality LUT Sequence present DICOM & PALETTE COLOR are already supported in this project.
+After installation, to enable dragging offline files onto Chrome, please:
+1. Navigate to `chrome://extensions`
+2. Locate DICOM Image Viewer and click DETAILS
+3. Turn "Allow access to file URLs" on
 
-The Chrome extension is published, click [there](https://chrome.google.com/webstore/detail/dicom-image-viewer/ehppmcooahfnlfhhcflpkcjmonkoindc) to install.
+The Chrome extension is published, click [here](https://chrome.google.com/webstore/detail/dicom-image-viewer/ehppmcooahfnlfhhcflpkcjmonkoindc) to install.
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## Motivation
 
