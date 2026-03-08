@@ -5,26 +5,28 @@
   "theme_color": "#000000",
   "background_color": "#ffffff",
 
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "DICOM image viewer",
   "description": "This extension allows the user to view DICOM image",
-  "version": "1.7",
-  "background": {
-    "scripts": ["background.js"]
-  },
+  "version": "1.8",
   "icons": {
     "16": "Dicom_16.png",
     "48": "Dicom_48.png",
     "128": "Dicom_128.png"
   },
-  "browser_action": {
+  "action": {
     "default_title": "DICOM image viewer (just open url or local file which needs enable local file access!)"
   },
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-  "web_accessible_resources": ["index.html"],
-  "permissions": ["webRequest", "webRequestBlocking", "<all_urls>"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "web_accessible_resources": [{
+    "resources": ["index.html"],
+    "matches": ["<all_urls>"]
+  }],
+  "host_permissions": ["<all_urls>"],
   "commands": {
-    "_execute_browser_action": {
+    "_execute_action": {
       "suggested_key": {
         "default": "Ctrl+U",
         "mac": "Command+U",
