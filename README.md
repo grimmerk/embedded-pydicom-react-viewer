@@ -5,7 +5,7 @@ This experimental project demonstrates
 1. How to use Python in browser, working with ReactApp.
 2. Use Python to parse DICOM files and pass data to JS, then draw it on Canvas.
 
-Tested on macOS Big Sur (intel/M1), Chrome 89.
+Tested on macOS (intel/Apple Silicon).
 
 Its usage is simple. Just drag a DICOM file into the panel to view.
 
@@ -20,8 +20,8 @@ Download DICOM files from [DICOM sample file sites](#dicom-sample-file-sites)
 - scale (resize to viewer size)
 - ...
 
-more complete list is on https://github.com/grimmer0125/dicom-web-viewer/wiki and 
-(0028,3000) Modality LUT Sequence present DICOM & PALETTE COLOR are already supported in this project. 
+More complete list is on [CHANGELOG.md](CHANGELOG.md).
+(0028,3000) Modality LUT Sequence present DICOM & PALETTE COLOR are already supported in this project.
 
 The Chrome extension is published, click [there](https://chrome.google.com/webstore/detail/dicom-image-viewer/ehppmcooahfnlfhhcflpkcjmonkoindc) to install.
 
@@ -29,7 +29,7 @@ The Chrome extension is published, click [there](https://chrome.google.com/webst
 
 Besides it is an interesting thing to use Python in browser, using Python DICOM parser has some advantages.
 
-1. Although my another Chrome extension/Web project, https://github.com/grimmer0125/dicom-web-viewer uses 3-party JavaScript DICOM parser library but it seems not manintained. The other JavaScript/TypeScript DICOM parser library might be too heavy to use.
+1. Although my other Chrome extension/Web project, https://github.com/grimmer0125/dicom-web-viewer uses a 3rd-party JavaScript DICOM parser library, it seems unmaintained. Other JavaScript/TypeScript DICOM parser libraries might be too heavy to use.
 2. Scientists usually use Python DICOM parser library, and using the same language/library is a good thing.
 
 ## Screenshot
@@ -38,12 +38,17 @@ OT-MONO2-8-hip.dcm from https://barre.dev/medical/samples/
 
 ![alt tag](https://raw.githubusercontent.com/grimmer0125/embedded-pydicom-react-viewer/master/public/screenshot.png)
 
-## Python 3.9.5 Browser runtime - Pyodide 0.18.0
+## Python runtime in browser - Pyodide
 
-ref:
+Uses [Pyodide](https://github.com/pyodide/pyodide) to run Python (CPython compiled to WebAssembly) in the browser.
 
-1. https://github.com/pyodide/pyodide
-2. https://pyodide.org/en/latest/development/new-packages.html
+| Component | Version |
+|-----------|---------|
+| Pyodide | 0.29.3 (Python 3.13) |
+| pydicom | 2.4.4 |
+| Chrome extension manifest | V3 |
+
+Ref: https://pyodide.org/en/stable/
 
 ### Other GitHub repos using Pyodide + Pydicom
 
@@ -52,81 +57,73 @@ ref:
 
 ## Development
 
-Please use VS Code and bulit-in TypeScript/Python formatter setting. Please install Python autopep8 out of thie project environment and mare sure the VS Code setting. Also, you can enable "format on save".
+Please use VS Code and built-in TypeScript/Python formatter setting. Please install Python autopep8 outside of this project environment and make sure the VS Code setting is configured. You can also enable "format on save".
 
 ### Setup Pyodide
 
-The current code uses local built Pyodide 0.18.0 version to speed up loading instead of CDN, just download it once. The zip file is https://github.com/grimmer0125/embedded-pydicom-react-viewer/releases/download/untagged-77e55ea5908aaad294e1/pyodide.zip and you can just execute
+The project bundles Pyodide 0.29.3 locally in `public/pyodide/` for faster loading. Run once to download:
 
-
-
-`$ sh download_pyodide.sh`
-
-in terminal which will download+unzip+move to `public/pyodide`. These Pyodide fiels were download from `https://cdn.jsdelivr.net/`, not built from scratch.
-
-Or you can comment these
-
-```
-<script src="pyodide/pyodide.js"></script>
-
-await loadPyodide({ indexURL : "pyodide/" });
-
-await micropip.install('pyodide/pydicom-2.2.1-py3-none-any.whl')
+```bash
+sh download_pyodide.sh
 ```
 
-and replace by below to fetch from CDN
+This downloads core Pyodide files + numpy/micropip/pydicom wheels from CDN to `public/pyodide/`.
 
-```
-<script src="https://cdn.jsdelivr.net/pyodide/dev/full/pyodide.js"></script>
+Alternatively, you can load Pyodide from CDN directly by modifying `public/index.html` and `pyodide_init.py`:
 
-await loadPyodide({ indexURL : "https://cdn.jsdelivr.net/pyodide/dev/full/" });
+```js
+// index.html: replace local script with CDN
+<script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
 
+// pyodideHelper.ts: use CDN indexURL
+await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/" });
+
+// pyodide_init.py: install from PyPI instead of local wheel
 await micropip.install('pydicom')
-
 ```
-### Install Python, Node.js and their dependencies for intel and Mac M1 (arm) machines
 
-https://github.com/nvm-sh/nvm January 2021: there are no pre-compiled NodeJS binaries for versions prior to 15.x for Apple's new M1 chip (arm64 architecture). v14.16 supports M1 but need compilation (auto done by nvm). p.s. nvm seems to still build 15.14.0
+### Install dependencies
 
-Make sure you have Node.js (v15.14.0+), Python (3.9.2+) and [Poetry](https://python-poetry.org/) installed first. (Optional) [pyenv](https://github.com/pyenv/pyenv) is recommended to switch different Python and it will automatically switch to 3.9.2 since .python-version is created.
+Make sure you have Node.js and Yarn installed. [nvm](https://github.com/nvm-sh/nvm) is recommended for managing Node.js versions.
 
-Python is to help Python static code analysing and code completion and host built-react code. For example, you install pydicom from wheel url and use it in runtime but you can install pydicom (`poetry add pydicom -dev`) to help the auto type completion in VSCode. 
+(Optional) Install Python and [Poetry](https://python-poetry.org/) for static code analysis and type completion in VS Code. [pyenv](https://github.com/pyenv/pyenv) is recommended for managing Python versions.
 
-Then
-1. `git submodule update --init --recursive`
-2. `npm install --global yarn`
-3. `yarn install`
-4. (optional) `poetry shell`
-5. (optional) `poetry install`
+```bash
+git submodule update --init --recursive
+npm install --global yarn
+yarn install
+# (optional) poetry install
+```
 
 ### Start coding
 
-Just `yarn start` (it may take a whlie for the 1st time since WebAssembly decoder is added)
+`yarn start` (first load may take a while due to WebAssembly initialization)
 
-## Production - Use Python FastAPI to host built React app
+## Production
 
-1. `yarn build` to build reactapp
+### Build
 
-2. To launch FastAPI,
-
-either
-
-```
-$ poetry shell
-$ uvicorn main:app
+```bash
+yarn build
 ```
 
-or
+The `NODE_OPTIONS=--openssl-legacy-provider` flag is already set in the npm script for Node.js 18+ compatibility.
 
+### Host with Python FastAPI (optional)
+
+```bash
+poetry shell
+uvicorn main:app
+# or: poetry run uvicorn main:app
 ```
-$ poetry run uvicorn main:app
-```
 
-Using `uvicorn main:app --reload` is for development but we already have create react app built-in development live server.
+### Load as Chrome extension
 
-## Docker images 
+1. `yarn build`
+2. Open `chrome://extensions/`, enable Developer mode
+3. Click "Load unpacked" and select the `build/` folder
 
-Building from latest code is not working now and wait for fix. `yarn build` happens out of memory error when building, and it probably is due to WebAssembly decoder.
+## Docker images
 
 ### Build a docker image to run (either on amd64 or arm64)
 
@@ -136,7 +133,7 @@ Building from latest code is not working now and wait for fix. `yarn build` happ
 
 ### Build a universal docker image (supporting amd64/arm64)
 
-Cross compliation for intel/m1 takes much more time than normal `docker build`. Building + Pushing to docker hub takes 20~30min. Several times.
+Cross compilation for intel/M1 takes much more time than normal `docker build`. Building + pushing to Docker Hub takes 20~30 min.
 
 1. `docker buildx create --use --name m1_builder`
 2. `docker buildx use m1_builder`
@@ -165,7 +162,7 @@ Image: https://hub.docker.com/repository/docker/grimmer0125/pyodide-react-dicom-
 
 ### Tested sample files
 
-Most of them are archived on https://github.com/grimmer0125/embedded-pydicom-react-viewer/releases/download/v0.2/dicom_samples.zip. ~~All jpeg compressed DICOM files need a extra JPEG decoder (except 50 baseline) to render on browser and currently it is parsed but not visible on browser. [Daikon][https://github.com/rii-mango/daikon] has done this, and https://github.com/cornerstonejs/dicomParser seems too.~~ The project already borrow the decoder from Dakon. 
+Most of them are archived on https://github.com/grimmer0125/embedded-pydicom-react-viewer/releases/download/v0.2/dicom_samples.zip. ~~All jpeg compressed DICOM files need a extra JPEG decoder (except 50 baseline) to render on browser and currently it is parsed but not visible on browser. [Daikon](https://github.com/rii-mango/daikon) has done this, and https://github.com/cornerstonejs/dicomParser seems too.~~ The project already borrows the decoder from Daikon.
 
 https://barre.dev/medical/samples/:
 
@@ -198,15 +195,15 @@ https://www.dclunie.com/images/compressed/index.html
 
 - image_dfl: 1.2.840.10008.1.2.1.99, MONOCHROME2
 
-## DICOM medical files - not handle cases
+## DICOM medical files - not handled cases
 
-pydicom suported transfer syntax: https://pydicom.github.io/pydicom/dev/old/image_data_handlers.html
+pydicom supported transfer syntax: https://pydicom.github.io/pydicom/dev/old/image_data_handlers.html
 
 Below non handled items are done in another project https://github.com/grimmer0125/dicom-web-viewer (canvas operation is borrowed from this)
 
 - DICOM FILE
   - Main Transfer Syntax:
-    - [done] 51,  57, 70 JPEG DICOM.
+    - [done] 51, 57, 70 JPEG DICOM.
     - 1.2.840.10008.1.2.5 RLE Lossless (US-PAL-8-10x-echo.dcm is ok but not sure others) 
     - [done] 1.2.840.10008.1.2.4.80 JPEG LS Lossless
     - [done] 1.2.840.10008.1.2.4.81 JPEG LS Lossy
@@ -228,8 +225,8 @@ ref https://www.dicomlibrary.com/dicom/transfer-syntax/
 
 [Solved][performance] Using Python numpy in browser is slow in some cases (see below **Speed test**), it takes `3~4s` for 1 512\*512 array operation. Using pure JavaScript takes less than 0.5s. Ref: https://github.com/pyodide/pyodide/issues/112 (the author said WebAssembly may takes `3~5x` slow). The solution might be
 
-1.  (can rollback to git commit: `219299f9adec489134206faf0cfab79d8345a7df`), using pydicom to parse DICOM files, sending pixel data to JS, then use JS to flatten 2D grey data to 1D RGBA canvas image data.~~
-2.  [Use this way, solved] Or is there any quick way in numpy for flattening a 2D grey array to 1D RGBA array with normalization? Such as https://stackoverflow.com/questions/59219210/extend-a-greyscale-image-to-fit-a-rgb-image? Also image2D.min()/max() is fast. Need more study/profiling.
+1. (can rollback to git commit: `219299f9adec489134206faf0cfab79d8345a7df`), using pydicom to parse DICOM files, sending pixel data to JS, then use JS to flatten 2D grey data to 1D RGBA canvas image data.
+2. [Use this way, solved] Or is there any quick way in numpy for flattening a 2D grey array to 1D RGBA array with normalization? Such as https://stackoverflow.com/questions/59219210/extend-a-greyscale-image-to-fit-a-rgb-image? Also image2D.min()/max() is fast. Need more study/profiling.
 
 **Speed test (using above sample file to test, file: `OT-MONO2-8-hip.dcm` on https://barre.dev/medical/samples/)**:
 
@@ -242,24 +239,23 @@ p.s.
 1. I did not record JS accurate time cost but it is fast.
 2. Local Python is much faster than Pyodide Python in browser.
 
-## todo list
+## Todo list
 
-Besides adding back above medical file cases/features, there are some optional things we can do
+Besides adding back above medical file cases/features, there are some optional things we can do:
 
-1. [Done] Host these on your server. Check https://pyodide.org/en/0.17.0a2/usage/serving-pyodide-packages.html & https://pyodide.org/en/0.17.0a2/usage/loading-packages.html#
-   1. pyodide.wasm (WebAssembly, 10MB), pyodide.asm.js (3.8MB), and pyodide.asm.data(5MB) files
-   2. pyodide packages. e.g. numpy.js (159KB) and numpy.data (7.3MB <-used by WebAssembly). (By contrast, a numpy wheel package is about 16MB)
-   3. non pyodide built-in pure python packages (which needs to be a wheel package and we use `pyodide micropip` to install them from PyPI). e.g. pydicom-2.1.2-py3-none-any.whl (1.9MB)
-2. Move python code to a browser webworker, https://pyodide.org/en/stable/usage/webworker.html.
+1. [Done] Host Pyodide locally. Ref: https://pyodide.org/en/stable/usage/serving-pyodide-packages.html
+   - Core files: `pyodide.js`, `pyodide.asm.js`, `pyodide.asm.wasm`, `python_stdlib.zip`, `pyodide-lock.json`
+   - Packages distributed as wheels: `numpy-*.whl`, `micropip-*.whl`, `pydicom-2.4.4-py3-none-any.whl`
+2. Move Python code to a browser web worker. Ref: https://pyodide.org/en/stable/usage/webworker.html
 3. [Done] Dockerization
 4. [Done] Bundle some testing DICOM files
-5. [Done] Introduction to medical files and pyodide
+5. [Done] Introduction to medical files and Pyodide
 6. Make a Python package
 7. 3D visualization
-8. **Help to improve Pyodide
+8. Help to improve Pyodide
 9. Refactor
 10. Add tests
-11. Fix [DICOM medical files - Not handle cases](#dicom-medical-files---not-handle-cases)
+11. Fix [DICOM medical files - not handled cases](#dicom-medical-files---not-handled-cases)
 
 ## Misc
 

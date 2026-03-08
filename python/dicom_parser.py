@@ -17,7 +17,7 @@ from pydicom.encaps import (
     generate_pixel_data_frame,
 )
 
-import pyodide
+from pyodide.ffi import create_proxy
 
 compressed_list = [
     "1.2.840.10008.1.2.4.50",
@@ -180,9 +180,9 @@ class PyodideDicom:
 
         ## TODO: might need reclaim pixel_data to release ???
         # https://pyodide.org/en/stable/usage/type-conversions.html#best-practices-for-avoiding-memory-leaks
-        # jsobj = pyodide.create_proxy(pixel_data)
+        # jsobj = create_proxy(pixel_data)
         # print("self.bit_allocated:" + str(self.bit_allocated))
-        jsobj = pyodide.create_proxy(pixel_data)  # JsProxy
+        jsobj = create_proxy(pixel_data)  # JsProxy
         # jsobj = pixel_data
         # jsobj = pyodide.to_js(pixel_data)
         # print(type(jsobj))  #
@@ -1347,9 +1347,8 @@ class PyodideDicom:
         )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and "pyodide" not in sys.modules:
     print("it is in __main__")
-    # will not be executed in pyodide context, after testing
     print("you are not in pyodide, just do local python stuff")
 
     # import line_profiler
