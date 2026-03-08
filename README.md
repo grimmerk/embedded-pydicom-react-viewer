@@ -20,7 +20,7 @@ Download DICOM files from [DICOM sample file sites](#dicom-sample-file-sites)
 - scale (resize to viewer size)
 - ...
 
-More complete list is on https://github.com/grimmer0125/dicom-web-viewer/wiki and
+More complete list is on [CHANGELOG.md](CHANGELOG.md).
 (0028,3000) Modality LUT Sequence present DICOM & PALETTE COLOR are already supported in this project.
 
 The Chrome extension is published, click [there](https://chrome.google.com/webstore/detail/dicom-image-viewer/ehppmcooahfnlfhhcflpkcjmonkoindc) to install.
